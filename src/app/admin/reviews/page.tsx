@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminReviewsList } from "./AdminReviewsList";
 
+type RecipeRef = { id: string; title_sr: string; slug: string };
+
 export default async function AdminReviewsPage({
   searchParams,
 }: {
@@ -37,7 +39,19 @@ export default async function AdminReviewsPage({
     );
   }
 
-  const rows = (reviews ?? []).map((r) => ({
+  const rows = (reviews ?? []).map((r) => {
+    const recipeRaw = r.recipe as unknown;
+    const recipeObj = Array.isArray(recipeRaw) ? recipeRaw[0] : recipeRaw;
+    const recipe =
+      recipeObj &&
+      typeof recipeObj === "object" &&
+      "id" in recipeObj &&
+      "title_sr" in recipeObj &&
+      "slug" in recipeObj
+        ? (recipeObj as RecipeRef)
+        : null;
+
+    return {
     id: r.id,
     recipe_id: r.recipe_id,
     user_id: r.user_id,
@@ -47,8 +61,9 @@ export default async function AdminReviewsPage({
     status: r.status,
     created_at: r.created_at,
     reviewed_at: r.reviewed_at ?? null,
-    recipe: r.recipe as { id: string; title_sr: string; slug: string } | null,
-  }));
+    recipe,
+  };
+  });
 
   return (
     <div>

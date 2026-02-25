@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminCommentsList } from "./AdminCommentsList";
 
+type RecipeRef = { id: string; title_sr: string; slug: string };
+
 export default async function AdminCommentsPage({
   searchParams,
 }: {
@@ -35,7 +37,19 @@ export default async function AdminCommentsPage({
     );
   }
 
-  const rows = (comments ?? []).map((c) => ({
+  const rows = (comments ?? []).map((c) => {
+    const recipeRaw = c.recipe as unknown;
+    const recipeObj = Array.isArray(recipeRaw) ? recipeRaw[0] : recipeRaw;
+    const recipe =
+      recipeObj &&
+      typeof recipeObj === "object" &&
+      "id" in recipeObj &&
+      "title_sr" in recipeObj &&
+      "slug" in recipeObj
+        ? (recipeObj as RecipeRef)
+        : null;
+
+    return {
     id: c.id,
     recipe_id: c.recipe_id,
     user_id: c.user_id,
@@ -43,8 +57,9 @@ export default async function AdminCommentsPage({
     status: c.status,
     created_at: c.created_at,
     reviewed_at: c.reviewed_at ?? null,
-    recipe: c.recipe as { id: string; title_sr: string; slug: string } | null,
-  }));
+    recipe,
+  };
+  });
 
   return (
     <div>
